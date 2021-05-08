@@ -32,12 +32,12 @@ class SimilarityDataset(Dataset):
             print("Path empty: ", self.img_dir)
             raise IOError
         shape = lambda x: self._read_image(x).shape
-        self.all_images = list(map(shape, tqdm(self.image_names))) # tqdm for nicer progress tracking
+        self.all_images = list(map(shape, tqdm(self.image_names, desc='Data'))) # tqdm for nicer progress tracking
 
     def _read_image(self, x):
         gray_image = np.asarray(cv2.imread(x, cv2.IMREAD_GRAYSCALE) / 255, dtype=np.float32)
         if len(gray_image.shape) == 2:
-            np.reshape()
+            gray_image = np.expand_dims(gray_image, axis=2)
         return np.transpose(gray_image, axes=[2, 0, 1])
 
     def __sample_images(self):
@@ -83,7 +83,7 @@ class SimilarityDataset(Dataset):
         if self.transform:
             image1 = self.transform(image1)
             image2 = self.transform(image2)
-        return torch.from_numpy(image1), torch.from_numpy(image2), torch.from_numpy(np.array([label],dtype=np.float32))
+        return torch.from_numpy(image1), torch.from_numpy(image2), torch.from_numpy(np.array(label,dtype=np.float32))
 
 
 if __name__ == '__main__':

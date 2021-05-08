@@ -11,8 +11,8 @@ if __name__ == '__main__':
 
     # 2. Save model inputs and hyperparameters
     # Start a new run, tracking hyperparameters in config
-    wandb.init(project="texsim2018", entity='shamann', group='init_debugs', config={
-        "image_size":(3,150,150),
+    wandb.init(project="texsim2018", entity='shamann', group='FirstTraining', config={
+        "image_size":(1,150,150),
         "learning_rate": 0.001,
         "dropout": 0.2,
         "batch_size": 32,
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f'Using {device.format(device)} device')
 
-    models_root = 'models/debug_runs'
+    models_root = 'models/FirstTraining_e100_b32_lr001'
     model, model_name = prepare_model(SiameseNetwork, models_root, device)
     trainer_euclidean_standard(model, model_name, 'data', models_root, device)
 

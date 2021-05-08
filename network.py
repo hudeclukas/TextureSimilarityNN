@@ -7,8 +7,8 @@ class SiameseNetwork(nn.Module):
         super(SiameseNetwork, self).__init__()
         self.device = device
         self.batch_size = batch_size
-        self.loss_ones = torch.ones(size=batch_size, dtype=torch.float32, device=device)
-        self.loss_max_zeros = torch.zeros(size=batch_size, dtype=torch.float32, device=device)
+        self.loss_ones = torch.ones(size=(batch_size,), dtype=torch.float32, device=device)
+        self.loss_max_zeros = torch.zeros(size=(batch_size,), dtype=torch.float32, device=device)
         self.cnn1 = nn.Sequential(
             nn.Conv2d(in_channels=in_channels, out_channels=96, kernel_size=(5,5), padding=(2,2)),
             nn.ReLU(),
@@ -72,12 +72,12 @@ class SiameseNetwork(nn.Module):
         return output1, output2
 
     def distance_euclid(self, tensor1, tensor2):
-        euclid2 = torch.sum(torch.pow(torch.subtract(tensor1, tensor2), exponent=2))
+        euclid2 = torch.sum(torch.pow(torch.subtract(tensor1, tensor2), exponent=2), dim=1)
         euclid = torch.sqrt(euclid2)
-        return euclid, euclid2
+        return torch.squeeze(euclid), torch.squeeze(euclid2)
 
     def distance_canberra(self, tensor1, tensor2):
-        canberra = torch.sum(torch.divide(torch.abs(torch.subtract(tensor1, tensor2)),torch.add(torch.abs(tensor1),torch.abs(tensor2))))
+        canberra = torch.sum(torch.divide(torch.abs(torch.subtract(tensor1, tensor2)),torch.add(torch.abs(tensor1),torch.abs(tensor2))), dim=1)
         return canberra, torch.pow(canberra, exponent=2)
 
     def loss_contrastive(self, net1, net2, target, margin, distance_metric:str):

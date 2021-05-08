@@ -18,7 +18,7 @@ def get_latest_model_id(path):
     else:
         return -1, -1
 
-def prepare_model(network, models_root, device):
+def prepare_model(network, models_root, device) -> [torch.nn.Module, str]:
     config = wandb.config
     latest_model_e = 0
     latest_model_b = 0
@@ -28,7 +28,7 @@ def prepare_model(network, models_root, device):
         latest_model_e,latest_model_b = get_latest_model_id(models_root)
 
     model_name = 'model_'+config.architecture+'-e_{:03d}-b_{:03d}.h5'
-    model = network(config.batch_size, device=device).to(device=device)
+    model = network(config.batch_size, in_channels=config.image_size[0], device=device).to(device=device)
     model_stats = summary(model.cuda(), input_size=[config.image_size,config.image_size], verbose=2)
 
     with open(os.path.join(models_root,'model_config.txt'),'w') as file:
@@ -37,3 +37,7 @@ def prepare_model(network, models_root, device):
         model.load_state_dict(torch.load(os.path.join(models_root,model_name.format(latest_model_e, latest_model_b))))
 
     return model, model_name
+
+if __name__ == '__main__':
+    epoch, batch = get_latest_model_id('models/FirstTraining_e100_b32_lr001/')
+    print(F"Found values epoch: {epoch} batch: {batch}")
