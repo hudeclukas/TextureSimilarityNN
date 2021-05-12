@@ -2,7 +2,7 @@ import os
 import torch
 from torchsummary import summary
 import wandb
-
+import time
 
 def get_latest_model_id(path):
     list_dir = os.listdir(path)
@@ -18,10 +18,10 @@ def get_latest_model_id(path):
     else:
         return -1, -1
 
-def prepare_model(network, models_root, device) -> [torch.nn.Module, str]:
+def prepare_model(network, models_root, device, verbose=False) -> [torch.nn.Module, str]:
     config = wandb.config
-    latest_model_e = 0
-    latest_model_b = 0
+    latest_model_e = -1
+    latest_model_b = -1
     if not os.path.exists(models_root):
         os.makedirs(models_root)
     else:
@@ -29,15 +29,20 @@ def prepare_model(network, models_root, device) -> [torch.nn.Module, str]:
 
     model_name = 'model_'+config.architecture+'-e_{:03d}-b_{:03d}.h5'
     model = network(config.batch_size, in_channels=config.image_size[0], device=device).to(device=device)
-    model_stats = summary(model.cuda(), input_size=[config.image_size,config.image_size], verbose=2)
+    if verbose:
+        model_stats = summary(model.cuda(), input_size=[config.image_size,config.image_size], verbose=2)
 
-    with open(os.path.join(models_root,'model_config.txt'),'w') as file:
+    with open(os.path.join(models_root,f'model_config_{int(time.time())}.txt'),'w') as file:
         file.write(str(model))
     if latest_model_e >= 0:
-        model.load_state_dict(torch.load(os.path.join(models_root,model_name.format(latest_model_e, latest_model_b))))
+        model_path = os.path.join(models_root, model_name.format(latest_model_e, latest_model_b))
+        model.load_state_dict(torch.load(model_path))
+        print('Loaded model:', model_path)
+    else:
+        latest_model_e = 0
 
-    return model, model_name
+    return model, model_name, latest_model_e
 
 if __name__ == '__main__':
-    epoch, batch = get_latest_model_id('models/FirstTraining_e100_b32_lr001/')
+    epoch, batch = get_latest_model_id('models/Train_on4imagesLeaky_e100_b32_lr0.002/')
     print(F"Found values epoch: {epoch} batch: {batch}")
