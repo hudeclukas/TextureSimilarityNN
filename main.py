@@ -2,9 +2,9 @@ from configuration import configuration
 import torch.cuda
 import wandb
 from model_factory import prepare_model
-from trainer_euclidean import trainer_euclidean_standard
+from trainer import trainer_standard
 
-from architectures import SiameseNetworkIWSSIP, SiameseSimple
+from architectures import SiameseNetworkIWSSIP, SiameseSimple, distance_euclid, distance_canberra
 
 
 if __name__ == '__main__':
@@ -34,6 +34,6 @@ if __name__ == '__main__':
 
     models_root = f'models/Euclidean/Train_on{config.max_samples}x{config.max_images}imagesChanging{int(config.other_images)}Leaky_e{config.epochs}_b{config.batch_size}_lr{config.learning_rate}_o{config.out_channels}'
     model, model_name, latest_epoch = prepare_model(SiameseSimple, models_root, config.device)
-    trainer_euclidean_standard(model, model_name, 'data', models_root, config.device, latest_epoch)
+    trainer_standard(model, model_name, distance_euclid,'data', models_root, config.device, latest_epoch)
 
     wandb.finish()

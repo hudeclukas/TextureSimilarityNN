@@ -9,7 +9,7 @@ from tqdm import tqdm
 from dataset_io import SimilarityDataset
 from Callbacks import EarlyStopping, ModelSaver
 
-def trainer_euclidean_standard(model, model_name, data_root, models_root, device, last_epoch=0):
+def trainer_standard(model, model_name, distance_metric, data_root, models_root, device, last_epoch=0):
     config = configuration()
 
     train_data = SimilarityDataset(os.path.join(data_root,'train'), max_samples=config.max_samples, max_images=config.max_images)
@@ -67,8 +67,8 @@ def trainer_euclidean_standard(model, model_name, data_root, models_root, device
                     print(f" ... Skipping small batch <{len(x1)}>")
                     continue
                 out1, out2 = model.forward(x1.to(device), x2.to(device))
-                val_loss = model.loss_contrastive(net1=out1,net2=out2,target=y.to(device),margin=config.margin,distance_metric='eucl')
-                distance, _ = model.distance_euclid(out1, out2)
+                val_loss = model.loss_contrastive(net1=out1,net2=out2,target=y.to(device),margin=config.margin,distance_metric=distance_metric)
+                distance, _ = distance_metric(out1, out2)
                 # similarity = (distance < 1).float()
                 # correct = (similarity==y.to(device)).float().sum()
                 for dist,t in zip(distance,y):
