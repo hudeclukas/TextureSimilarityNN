@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import torch
 
 
@@ -37,3 +38,40 @@ class EarlyStopping:
             self.counter = 0
 
         return self.early_stop
+
+"""Saves the model only if the metric has improved. It is possible to set to save only K best models."""
+class ModelSaver:
+    def __init__(self, models_root, base_name, K_best, metric_operation):
+        """
+        Args:
+            root (str): path to model directory
+            base_name (str): base name of model with format placeholder for epoch number
+            K_best (int): keeps only the #K best models and removes other
+            metric_operation (function): function to determine the improvement of watched metric
+        """
+        self.root = models_root
+        self.base_name = base_name
+        self.K_best = K_best
+        self.models_array = [] # stores [score, epoch]
+        self.reverse = metric_operation(0,1)
+
+    def __call__(self, model, score, epoch, verbose=True):
+        new_model_path = os.path.join(self.root, self.base_name.format(epoch, 0))
+        if len(self.models_array) < self.K_best:
+            self.models_array.append([score, epoch])
+            torch.save(model.state_dict(), new_model_path)
+            if verbose:
+                print(f'Model saved: {new_model_path}')
+            self.models_array.sort(reverse=self.reverse)
+            return
+
+        worst = self.models_array[-1]
+        if self.improved(score, worst[0]):
+            self.models_array[-1] = [score, epoch]
+            os.remove(os.path.join(self.root, self.base_name.format(worst[1], 0)))
+            torch.save(model.state_dict(), new_model_path)
+            if verbose:
+                print(f'Model saved: {new_model_path}')
+            self.models_array.sort(reverse=self.reverse)
+        return
+

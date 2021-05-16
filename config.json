@@ -1,0 +1,20 @@
+{
+  "name": "TexSim2018",
+  "version": "1.0.0",
+  "distance": "Euclidean",
+  "image_size": [1,150,150],
+  "filters": [32,64,64,64,128,256,256],
+  "out_channels": 128,
+  "learning_rate": 0.002,
+  "margin": 2,
+  "dropout": 0.2,
+  "patience": 5,
+  "batch_size": 64,
+  "max_images": 16,
+  "max_samples": 100,
+  "other_images": true,
+  "epochs": 400,
+  "architecture": "SiameseNetworkLeaky_small",
+  "dataset": "SimTex2018",
+  "wandb_key": "key ;)"
+}

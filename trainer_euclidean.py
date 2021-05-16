@@ -1,3 +1,4 @@
+from configuration import configuration
 import os
 
 import numpy as np
@@ -6,13 +7,13 @@ from torch.utils.data import DataLoader
 import wandb
 from tqdm import tqdm
 from dataset_io import SimilarityDataset
-from Callbacks import EarlyStopping
+from Callbacks import EarlyStopping, ModelSaver
 
 def trainer_euclidean_standard(model, model_name, data_root, models_root, device, last_epoch=0):
-    config = wandb.config
+    config = configuration()
 
     train_data = SimilarityDataset(os.path.join(data_root,'train'), max_samples=config.max_samples, max_images=config.max_images)
-    val_data = SimilarityDataset(os.path.join(data_root,'val'), max_samples=100, max_images=8)
+    val_data = SimilarityDataset(os.path.join(data_root,'val'), max_samples=100, max_images=16)
 
     train_dataloader = DataLoader(train_data, config.batch_size, shuffle=True, num_workers=8)
     val_dataloader = DataLoader(val_data, config.batch_size, shuffle=True, num_workers=8)
@@ -20,7 +21,9 @@ def trainer_euclidean_standard(model, model_name, data_root, models_root, device
 
     wandb.watch(model, log_freq=50, log="all")
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate, betas=(0.7, 0.99))
-    early_stopper = EarlyStopping(patience=config.patience, delta=0.2)
+    early_stopper = EarlyStopping(patience=config.patience, delta=0.05)
+    improved = lambda new, old: new < old
+    model_saver = ModelSaver(models_root, model_name, 5, improved)
 
     last_best_loss = np.inf
     last_best_score = 0
@@ -48,7 +51,7 @@ def trainer_euclidean_standard(model, model_name, data_root, models_root, device
         wandb.log({"train_loss": train_loss_mean/batches})
         print(f"Epoch: {epoch} Loss: {train_loss_mean/batches}")
 # Reset Training data
-        train_data.reset(other_images=True)
+        train_data.reset(other_images=config.other_images)
 
         loss_mean = 0
         batches = 0
@@ -69,10 +72,10 @@ def trainer_euclidean_standard(model, model_name, data_root, models_root, device
                 # similarity = (distance < 1).float()
                 # correct = (similarity==y.to(device)).float().sum()
                 for dist,t in zip(distance,y):
-                    if dist < 1 and t: tp += 1
-                    if dist < 1 and not t: fp += 1
-                    if dist >= 1 and not t: tn += 1
-                    if dist >= 1 and t: fn += 1
+                    if dist < 1 and t == 1: tp += 1
+                    if dist < 1 and t == 0: fp += 1
+                    if dist >= 1 and t == 0 : tn += 1
+                    if dist >= 1 and t == 1: fn += 1
                 # print(f" ... Loss: {val_loss.item()} Acc: {correct/x1.shape[0]}", end='...')
                 loss_mean += val_loss.item()
                 # accuracy_mean += correct/x1.shape[0]
@@ -84,10 +87,11 @@ def trainer_euclidean_standard(model, model_name, data_root, models_root, device
             val_data.reset(other_images=True)
 
 # Save model if loss is better
-        if train_loss_mean < last_best_loss:
-            torch.save(model.state_dict(), os.path.join(models_root,model_name.format(epoch, 0)))
-            last_best_loss = train_loss_mean
+        model_saver(model, train_loss_mean, epoch)
 
-        if early_stopper(loss_mean):
-            print('Early stopping')
-            break
+    if early_stopper(loss_mean):
+        print('Early stopping')
+        torch.save(model.state_dict(), os.path.join(models_root, model_name.format(epoch, 0)))
+        return
+
+    torch.save(model.state_dict(), os.path.join(models_root, model_name.format(config.epochs, 0)))

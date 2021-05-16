@@ -1,3 +1,4 @@
+from configuration import configuration
 from torch import nn
 import torch
 from .SiameseBase import SiameseBase
@@ -5,51 +6,52 @@ from .SiameseBase import SiameseBase
 class SiameseSimple(SiameseBase):
     def __init__(self, batch_size, in_channels=1, device='cuda'):
         super(SiameseSimple, self).__init__(batch_size, in_channels, device)
-
+        self.config = configuration()
+        f = self.config.filters
         self.cnn1 = nn.Sequential(
-            nn.Conv2d(in_channels=in_channels, out_channels=16, kernel_size=(3,3), padding=(1,1)),
+            nn.Conv2d(in_channels=in_channels, out_channels=f[0], kernel_size=(3,3), padding=(1,1)),
             nn.LeakyReLU(),
             nn.MaxPool2d(kernel_size=(2,2), stride=(2,2), padding=0),
-            nn.BatchNorm2d(16)
+            nn.BatchNorm2d(f[0])
         )
         self.cnn2 = nn.Sequential(
-            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=(3,3), padding=(1,1)),
+            nn.Conv2d(in_channels=f[0], out_channels=f[1], kernel_size=(3,3), padding=(1,1)),
             nn.LeakyReLU(),
             nn.MaxPool2d(kernel_size=(2,2), stride=(2,2), padding=0),
-            nn.BatchNorm2d(32)
+            nn.BatchNorm2d(f[1])
         )
         self.cnn3 = nn.Sequential(
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=(3,3), padding=(1,1)),
+            nn.Conv2d(in_channels=f[1], out_channels=f[2], kernel_size=(3,3), padding=(1,1)),
             nn.LeakyReLU(),
-            nn.BatchNorm2d(64)
+            nn.BatchNorm2d(f[2])
         )
         self.cnn4 = nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=(3,3), padding=(1,1)),
+            nn.Conv2d(in_channels=f[2], out_channels=f[3], kernel_size=(3,3), padding=(1,1)),
             nn.LeakyReLU(),
             nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2), padding=0),
-            nn.BatchNorm2d(64)
+            nn.BatchNorm2d(f[3])
         )
         self.cnn5 = nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=(3,3), padding=(1,1)),
+            nn.Conv2d(in_channels=f[3], out_channels=f[4], kernel_size=(3,3), padding=(1,1)),
             nn.LeakyReLU(),
-            nn.BatchNorm2d(64)
+            nn.BatchNorm2d(f[4])
         )
         self.cnn6 = nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=(3,3), padding=(1,1)),
+            nn.Conv2d(in_channels=f[4], out_channels=f[5], kernel_size=(3,3), padding=(1,1)),
             nn.LeakyReLU(),
             nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2), padding=0),
-            nn.BatchNorm2d(64)
+            nn.BatchNorm2d(f[5])
         )
         self.cnn7 = nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=(3, 3), padding=(1, 1)),
+            nn.Conv2d(in_channels=f[5], out_channels=f[6], kernel_size=(3, 3), padding=(1, 1)),
             nn.LeakyReLU(),
-            nn.BatchNorm2d(128)
+            nn.BatchNorm2d(f[6])
         )
         self.glob_pool = nn.Sequential(
             nn.Flatten(2,-1)
         )
         self.cnn8 = nn.Sequential(
-            nn.Conv2d(in_channels=128, out_channels=3, kernel_size=(1,1))
+            nn.Conv2d(in_channels=f[6], out_channels=self.config.out_channels, kernel_size=(1,1))
         )
 
     def forward_branch(self, x):

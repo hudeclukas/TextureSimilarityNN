@@ -21,7 +21,7 @@ def tpr_fpr(distances, y_true, threshold):
 def plot_ROC(tprs, fprs, thresholds, label, color, save_path=None) -> float:
     idx = np.argmax(np.array(tprs) - np.array(fprs))
     t = thresholds[idx]
-    plt.figure()
+    plt.figure(figsize=[12,8])
     plt.plot(fprs, tprs, color=color, label=label)
     plt.plot([1, 0], [1, 0], color='navy', linestyle='--', label='50% random probability')
     plt.plot([fprs[idx], fprs[idx]], [0, tprs[idx]], color='black', linestyle=':',
@@ -32,8 +32,8 @@ def plot_ROC(tprs, fprs, thresholds, label, color, save_path=None) -> float:
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     plt.legend(loc="lower right")
+    if save_path != None:
+        plt.savefig(save_path, dpi=200.0)
     plt.show()
     plt.close()
-    if save_path != None:
-        plt.savefig(fname=save_path, dpi=200.0)
     return t
