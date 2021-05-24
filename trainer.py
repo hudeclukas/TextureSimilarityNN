@@ -15,8 +15,8 @@ def trainer_standard(model, model_name, distance_metric, data_root, models_root,
     train_data = SimilarityDataset(os.path.join(data_root,'train'), max_samples=config.max_samples, max_images=config.max_images)
     val_data = SimilarityDataset(os.path.join(data_root,'val'), max_samples=100, max_images=16)
 
-    train_dataloader = DataLoader(train_data, config.batch_size, shuffle=True, num_workers=8)
-    val_dataloader = DataLoader(val_data, config.batch_size, shuffle=True, num_workers=8)
+    train_dataloader = DataLoader(train_data, config.batch_size, shuffle=True, num_workers=config.threads)
+    val_dataloader = DataLoader(val_data, config.batch_size, shuffle=True, num_workers=config.threads)
     # train_img1, train_img2, train_label = next(iter(train_dataloader))
 
     wandb.watch(model, log_freq=50, log="all")
@@ -38,7 +38,7 @@ def trainer_standard(model, model_name, distance_metric, data_root, models_root,
                 print(f" ... Skipping small batch <{len(x1)}>")
                 continue
             out1,out2 = model.forward(x1.to(device),x2.to(device))
-            loss = model.loss_contrastive(net1=out1,net2=out2,target=y.to(device),margin=config.margin,distance_metric='eucl')
+            loss = model.loss_contrastive(net1=out1,net2=out2,target=y.to(device),margin=config.margin,distance_metric=distance_metric)
             train_loss_mean += loss.item()
 
             optimizer.zero_grad()
@@ -62,7 +62,7 @@ def trainer_standard(model, model_name, distance_metric, data_root, models_root,
         fn = 0
         if epoch % 1 == 0:
             model.eval()
-            for batch, (x1,x2,y) in tqdm(enumerate(val_dataloader), desc='Val Batch',total=int(np.ceil(len(val_data)/config.batch_size))):
+            for batch, (x1,x2,y) in enumerate(val_dataloader):
                 if len(x1) != config.batch_size:
                     print(f" ... Skipping small batch <{len(x1)}>")
                     continue
@@ -87,7 +87,7 @@ def trainer_standard(model, model_name, distance_metric, data_root, models_root,
             val_data.reset(other_images=True)
 
 # Save model if loss is better
-        model_saver(model, train_loss_mean, epoch)
+        model_saver(model, train_loss_mean/batches, epoch)
 
     if early_stopper(loss_mean):
         print('Early stopping')

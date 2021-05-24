@@ -53,13 +53,17 @@ class ModelSaver:
         self.base_name = base_name
         self.K_best = K_best
         self.models_array = [] # stores [score, epoch]
-        self.reverse = metric_operation(0,1)
+        self.reverse = not (metric_operation(0,1))
+        self.improved = metric_operation
+        if not os.path.exists(models_root):
+            os.makedirs(models_root)
 
-    def __call__(self, model, score, epoch, verbose=True):
+    def __call__(self, model, score, epoch, verbose=True, debug=False):
         new_model_path = os.path.join(self.root, self.base_name.format(epoch, 0))
         if len(self.models_array) < self.K_best:
             self.models_array.append([score, epoch])
-            torch.save(model.state_dict(), new_model_path)
+            if not debug:
+                torch.save(model.state_dict(), new_model_path)
             if verbose:
                 print(f'Model saved: {new_model_path}')
             self.models_array.sort(reverse=self.reverse)
@@ -68,10 +72,22 @@ class ModelSaver:
         worst = self.models_array[-1]
         if self.improved(score, worst[0]):
             self.models_array[-1] = [score, epoch]
-            os.remove(os.path.join(self.root, self.base_name.format(worst[1], 0)))
-            torch.save(model.state_dict(), new_model_path)
+            old_model_path = os.path.join(self.root, self.base_name.format(worst[1], 0))
+            if not debug:
+                os.remove(old_model_path)
+                torch.save(model.state_dict(), new_model_path)
             if verbose:
-                print(f'Model saved: {new_model_path}')
+                print(f'Model removed: {old_model_path} score: {worst[0]}')
+                print(f'Model saved: {new_model_path} score: {score}')
             self.models_array.sort(reverse=self.reverse)
         return
 
+
+if __name__ == '__main__':
+    improved = lambda new, old : new < old
+    ms = ModelSaver('models/','model_e{:02d}',3, improved)
+
+    for i in range(20):
+        randint = np.random.randint(0, 10)
+        print(f'{i}.', randint)
+        ms(None, randint, i, debug=True)

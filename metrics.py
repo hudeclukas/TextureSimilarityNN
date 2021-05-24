@@ -18,11 +18,12 @@ def tpr_fpr(distances, y_true, threshold):
         fpr = 0
     return tpr, fpr
 
-def plot_ROC(tprs, fprs, thresholds, label, color, save_path=None) -> float:
+def plot_ROC(tprs, fprs, thresholds, label, color, save_path=None) -> [float,float]:
+    AUC = np.trapz(tprs, fprs)
     idx = np.argmax(np.array(tprs) - np.array(fprs))
     t = thresholds[idx]
     plt.figure(figsize=[12,8])
-    plt.plot(fprs, tprs, color=color, label=label)
+    plt.plot(fprs, tprs, color=color, label=label+f' AUC={AUC:.3f}')
     plt.plot([1, 0], [1, 0], color='navy', linestyle='--', label='50% random probability')
     plt.plot([fprs[idx], fprs[idx]], [0, tprs[idx]], color='black', linestyle=':',
              label='fpr:{:0.3f}, tpr:{:0.3f}, thr:{:0.3f}'.format(fprs[idx], tprs[idx], thresholds[idx]))
@@ -36,4 +37,4 @@ def plot_ROC(tprs, fprs, thresholds, label, color, save_path=None) -> float:
         plt.savefig(save_path, dpi=200.0)
     plt.show()
     plt.close()
-    return t
+    return t, AUC
