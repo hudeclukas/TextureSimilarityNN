@@ -1,9 +1,8 @@
-wandb==0.10.30
+wandb>=0.10.30
 torch>=1.8.1
 torch-summary
 numpy>=1.19.3
-#opencv-python-headless>=4.4.0.46
-opencv-python>=4.4.0.46
+opencv-python-headless>=4.4.0.46
 matplotlib>=3.3.3
 tqdm==4.60.0
 azureml-core==1.28.0

@@ -1,0 +1,13 @@
+data
+dataDTD
+models
+notebooks
+
+.git
+.idea
+img
+scripts
+__pycache__
+Inference.ipynb
+AzureScripts.zip
+wandb

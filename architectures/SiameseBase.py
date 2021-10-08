@@ -12,8 +12,25 @@ def distance_canberra(tensor1, tensor2):
     canberra = torch.sum(
         torch.divide(torch.abs(torch.subtract(tensor1, tensor2)), torch.add(torch.abs(tensor1), torch.abs(tensor2))),
         dim=1)
-    return canberra, torch.pow(canberra, exponent=2)
+    return canberra, 2*canberra
 
+def distance_bray_curtis(tensor1, tensor2):
+    distance = torch.abs(torch.sum(
+        torch.divide(torch.abs(torch.subtract(tensor1, tensor2)), torch.add(tensor1, tensor2)),
+        dim=1))
+    return distance.squeeze(), 2*distance.squeeze()
+
+def distance_mahalanobis(tensor1, tensor2):
+    def cov(x,y):
+        ddof=1
+        fact = x.shape[1] - ddof
+        c = torch.matmul(torch.unsqueeze(x.squeeze(),-1),torch.transpose(torch.unsqueeze(y.squeeze(),-1),dim0=1,dim1=2))
+        c = c / fact
+        return c.squeeze()
+    delta = tensor1 - tensor2
+    inv_cov = torch.inverse(cov(tensor1,tensor2))
+    distance_sqr = torch.abs(torch.bmm(torch.bmm(torch.transpose(torch.squeeze(delta,dim=-1),dim1=1,dim0=2),torch.squeeze(inv_cov)),torch.squeeze(delta,dim=-1)))
+    return torch.sqrt(distance_sqr).squeeze(), distance_sqr.squeeze()
 
 class SiameseBase(nn.Module):
     def __init__(self, batch_size, in_channels=1, device='cuda'):

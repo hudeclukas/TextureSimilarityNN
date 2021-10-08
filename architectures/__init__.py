@@ -1,3 +1,4 @@
 from .SiameseIWSSIP import SiameseNetworkIWSSIP
 from .SiameseSimple import SiameseSimple
-from .SiameseBase import distance_euclid, distance_canberra
+from .SiameseAE     import SiameseAE
+from .SiameseBase import distance_euclid, distance_canberra, distance_mahalanobis, distance_bray_curtis

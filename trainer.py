@@ -6,14 +6,18 @@ import torch
 from torch.utils.data import DataLoader
 import wandb
 from tqdm import tqdm
-from dataset_io import SimilarityDataset
+from dataset_io import SimilarityDataset, DTDDataset
 from Callbacks import EarlyStopping, ModelSaver
 
 def trainer_standard(model, model_name, distance_metric, data_root, models_root, device, last_epoch=0):
     config = configuration()
 
-    train_data = SimilarityDataset(os.path.join(data_root,'train'), max_samples=config.max_samples, max_images=config.max_images)
-    val_data = SimilarityDataset(os.path.join(data_root,'val'), max_samples=100, max_images=16)
+    if config.dataset == "DTD":
+        train_data = DTDDataset(os.path.join(data_root,'train'), max_samples=config.max_samples, max_classes=config.max_images, label_file_index=1)
+        val_data = DTDDataset(os.path.join(data_root,'valid'), max_samples=3, max_classes=config.max_images, label_file_index=1)
+    else:
+        train_data = SimilarityDataset(os.path.join(data_root,'train'), max_samples=config.max_samples, max_images=config.max_images)
+        val_data = SimilarityDataset(os.path.join(data_root,'val'), max_samples=100, max_images=16)
 
     train_dataloader = DataLoader(train_data, config.batch_size, shuffle=True, num_workers=config.threads)
     val_dataloader = DataLoader(val_data, config.batch_size, shuffle=True, num_workers=config.threads)
@@ -51,7 +55,7 @@ def trainer_standard(model, model_name, distance_metric, data_root, models_root,
         wandb.log({"train_loss": train_loss_mean/batches})
         print(f"Epoch: {epoch} Loss: {train_loss_mean/batches}")
 # Reset Training data
-        train_data.reset(other_images=config.other_images)
+        train_data.reset(config.other_images)
 
         loss_mean = 0
         batches = 0
@@ -81,10 +85,17 @@ def trainer_standard(model, model_name, distance_metric, data_root, models_root,
                 # accuracy_mean += correct/x1.shape[0]
                 batches += 1
 
-            wandb.log({"val_loss": loss_mean/batches, "val_acc":(tp+tn)/(tp+tn+fp+fn), "val_prec":(tp)/(tp+fp), "val_rec":(tp)/(tp+fn)})
-            print(f"Val Loss: {loss_mean/batches} Acc: {(tp+tn)/(tp+tn+fp+fn)}")
+            divisor = (tp + tn + fp + fn)
+            tpfp = (tp + fp)
+            tpfn = (tp + fn)
+            if divisor != 0 and tpfp != 0 and tpfn != 0:
+                wandb.log({"val_loss": loss_mean/batches, "val_acc": (tp+tn) / divisor, "val_prec": (tp) / tpfp, "val_rec": (tp) / tpfn})
+                print(f"Val Loss: {loss_mean/batches} Acc: {(tp+tn) / divisor}")
+            else:
+                wandb.log({"val_loss": loss_mean / batches, "val_acc": 0, "val_prec": 0, "val_rec": 0})
+                print(f"Val Loss: {loss_mean / batches} Acc: {0}, tp{tp}, fp{fp}, tn{tn}, fn{fn}")
 # Reset validation data
-            val_data.reset(other_images=True)
+            val_data.reset(True)
 
 # Save model if loss is better
         model_saver(model, train_loss_mean/batches, epoch)

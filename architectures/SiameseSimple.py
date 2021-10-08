@@ -1,7 +1,9 @@
+import numpy as np
+
 from configuration import configuration
 from torch import nn
 import torch
-from .SiameseBase import SiameseBase
+from SiameseBase import SiameseBase
 
 class SiameseSimple(SiameseBase):
     def __init__(self, batch_size, in_channels=1, device='cuda'):
@@ -78,7 +80,11 @@ class SiameseSimple(SiameseBase):
 
 
 if __name__ == '__main__':
+    from configuration import configuration
+    config = configuration('../config.json')
+    image = torch.from_numpy(np.zeros([1]+list(config.image_size), np.float32))
     net = SiameseSimple(16)
+    out = net.forward(image,image)
     print(net)
     print(list(net.parameters()))
     with open('../models/test/model_config.txt', 'w') as file:

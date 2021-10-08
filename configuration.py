@@ -19,6 +19,7 @@ class configuration(metaclass=singleton):
             self.__config = json.load(f)
             for key in self.__config.keys():
                 self.__dict__[key] = self.__config[key]
+                print(key,':',self.__config[key])
 
     def add(self, key, value):
         self.__dict__[key]=value
